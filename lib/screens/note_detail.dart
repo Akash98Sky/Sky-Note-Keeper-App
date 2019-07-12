@@ -57,10 +57,6 @@ class NoteDetailState extends State<NoteDetail> {
         ),
         body: Form(
           key: _formKey,
-          // onChanged: () {
-          //   updateTitle();
-          //   updateDescription();
-          // },
           child: Padding(
             padding: EdgeInsets.only(top: 15, left: 10, right: 10),
             child: ListView(
