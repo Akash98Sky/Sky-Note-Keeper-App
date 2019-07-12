@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/screens/note_detail.dart';
 import 'package:note_keeper/utils/database_helper.dart';
+import 'package:note_keeper/utils/utils.dart';
 import 'package:sqflite/sqlite_api.dart';
 
 class NoteList extends StatefulWidget {
@@ -16,20 +17,44 @@ class NoteListState extends State<NoteList> {
   List<Note> noteList;
   int _count = 0;
 
+  List<String> _popupOptions = ['Settings', 'About'];
+
   @override
   Widget build(BuildContext context) {
-    if(noteList == null) {
+    if (noteList == null) {
       noteList = List<Note>();
       updateListView();
     }
 
     return Scaffold(
-      appBar: AppBar(title: Text('Notes')),
+      appBar: AppBar(
+        leading: Padding(
+          padding: EdgeInsets.all(4),
+          child: Image.asset(
+            'icons/launcher_icon.png',
+          ),
+        ),
+        title: Text('Notes'),
+        actions: <Widget>[
+          PopupMenuButton<String>(
+            onSelected: choiceAction,
+            itemBuilder: (BuildContext context) {
+              return _popupOptions.map((String choice) {
+                return PopupMenuItem(
+                  value: choice,
+                  child: Text(choice),
+                );
+              }
+              ).toList();
+            },
+          )
+        ],
+      ),
       body: getNodeListView(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           debugPrint('FAB pressed');
-          navToDetail(Note('', '', 1),'Add Note');
+          navToDetail(Note('', '', 1), 'Add Note');
           updateListView();
         },
         tooltip: 'Add Note',
@@ -45,7 +70,7 @@ class NoteListState extends State<NoteList> {
       itemCount: _count,
       itemBuilder: (BuildContext context, int pos) {
         return Card(
-          color: Colors.white,
+          color: Colors.black38,
           elevation: 2.0,
           child: ListTile(
             leading: CircleAvatar(
@@ -55,14 +80,17 @@ class NoteListState extends State<NoteList> {
             title: Text(this.noteList[pos].title, style: titleStyle),
             subtitle: Text(this.noteList[pos].date),
             trailing: GestureDetector(
-              child: Icon(Icons.delete, color: Colors.grey,),
+              child: Icon(
+                Icons.delete,
+                color: Colors.grey,
+              ),
               onTap: () {
                 _delete(context, noteList[pos]);
               },
             ),
             onTap: () {
               debugPrint('ListTile Tapped');
-              navToDetail(this.noteList[pos] ,'Edit Node');
+              navToDetail(this.noteList[pos], 'Edit Node');
               updateListView();
             },
           ),
@@ -71,8 +99,18 @@ class NoteListState extends State<NoteList> {
     );
   }
 
+  void choiceAction(String choice) {
+    if(choice == _popupOptions[1])
+      Utils.showAlertDialog(context, 
+        "Sky Note Keeper", 
+        "Developer & Designer =>\n Akash Mondal (Akash98Sky)",
+        titleCol: Colors.lightBlue,
+        msgCol: Colors.orange
+      );
+  }
+
   Color getPriorityColor(int priority) {
-    switch(priority) {
+    switch (priority) {
       case 0:
         return Colors.red;
         break;
@@ -85,7 +123,7 @@ class NoteListState extends State<NoteList> {
   }
 
   Icon getPriorityIcon(int priority) {
-    switch(priority) {
+    switch (priority) {
       case 0:
         return Icon(Icons.play_arrow);
         break;
@@ -99,25 +137,18 @@ class NoteListState extends State<NoteList> {
 
   void _delete(BuildContext context, Note note) async {
     int result = await databaseHelper.deleteNote(note.id);
-    if(result != 0)
-    {
-      _showSnackBar(context, 'Note Deleted Successfully!');
+    if (result != 0) {
+      Utils.showSnackBar(context, 'Note Deleted Successfully!');
       updateListView();
     }
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-
-		final snackBar = SnackBar(content: Text(message), duration: Duration(seconds: 2),);
-		Scaffold.of(context).showSnackBar(snackBar);
-	}
-
-  void navToDetail(Note note,String rsn) async {
-    bool result = await Navigator.push(context, MaterialPageRoute(builder: (context) {
+  void navToDetail(Note note, String rsn) async {
+    bool result =
+        await Navigator.push(context, MaterialPageRoute(builder: (context) {
       return NoteDetail(note, rsn);
     }));
-    if(result == true)
-      updateListView();
+    if (result == true) updateListView();
   }
 
   void updateListView() {
@@ -133,5 +164,4 @@ class NoteListState extends State<NoteList> {
       });
     });
   }
-
 }

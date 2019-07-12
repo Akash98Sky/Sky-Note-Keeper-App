@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/utils/database_helper.dart';
+import 'package:note_keeper/utils/utils.dart';
 
 class NoteDetail extends StatefulWidget {
   final String appBarTitle;
@@ -198,32 +199,24 @@ class NoteDetailState extends State<NoteDetail> {
       result = await helper.insertNote(note);
 
     if (result != 0)
-      _showAlertDialog('Status', 'Note Saved Successfully');
+      Utils.showAlertDialog(context, 'Status', 'Note Saved Successfully');
     else
-      _showAlertDialog('Status', 'Problem in Saving Note');
+      Utils.showAlertDialog(context, 'Status', 'Problem in Saving Note');
   }
 
   void _delete() async {
     moveToLastScreen();
 
     if (note.id == null) {
-      _showAlertDialog('Status', 'No Note was deleted');
+      Utils.showAlertDialog(context, 'Status', 'No Note was deleted');
       return;
     }
 
     int result = await helper.deleteNote(note.id);
     if (result != 0) {
-      _showAlertDialog('Status', 'Note Deleted Successfully');
+      Utils.showAlertDialog(context, 'Status', 'Note Deleted Successfully');
     } else {
-      _showAlertDialog('Status', 'Error Occured while Deleting Note');
+      Utils.showAlertDialog(context, 'Status', 'Error Occured while Deleting Note');
     }
-  }
-
-  void _showAlertDialog(String title, String message) {
-    AlertDialog alertDialog = AlertDialog(
-      title: Text(title),
-      content: Text(message),
-    );
-    showDialog(context: context, builder: (_) => alertDialog);
   }
 }
