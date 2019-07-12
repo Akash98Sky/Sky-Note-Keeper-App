@@ -23,13 +23,13 @@ class Note {
   }
 
   set description(String newDescription) {
-    if(newDescription.length <= 511) {
+    if(newDescription.length <= 255) {
       this._description = newDescription;
     }
   }
 
   set priority(int newPriority) {
-    if(newPriority >= 0 && newPriority <= 1) {
+    if(newPriority >= 0 && newPriority <= 2) {
       this._priority = newPriority;
     }
   }

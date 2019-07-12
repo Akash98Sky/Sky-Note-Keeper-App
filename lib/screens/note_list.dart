@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/screens/note_detail.dart';
+import 'package:note_keeper/screens/note_settings.dart';
 import 'package:note_keeper/utils/database_helper.dart';
 import 'package:note_keeper/utils/utils.dart';
 import 'package:sqflite/sqlite_api.dart';
@@ -70,7 +71,7 @@ class NoteListState extends State<NoteList> {
       itemCount: _count,
       itemBuilder: (BuildContext context, int pos) {
         return Card(
-          color: Colors.black38,
+          color: Colors.black,
           elevation: 2.0,
           child: ListTile(
             leading: CircleAvatar(
@@ -91,7 +92,6 @@ class NoteListState extends State<NoteList> {
             onTap: () {
               debugPrint('ListTile Tapped');
               navToDetail(this.noteList[pos], 'Edit Node');
-              updateListView();
             },
           ),
         );
@@ -99,24 +99,42 @@ class NoteListState extends State<NoteList> {
     );
   }
 
+  void updateListView() {
+    final Future<Database> dbFuture = databaseHelper.initializeDatabase();
+    dbFuture.then((database) {
+      Future<List<Note>> noteListFuture = databaseHelper.getNoteList();
+      noteListFuture.then((noteList) {
+        setState(() {
+          this.noteList = noteList;
+          this._count = noteList.length;
+          debugPrint('Updated List View');
+        });
+      });
+    });
+  }
+
   void choiceAction(String choice) {
-    if(choice == _popupOptions[1])
+    if(choice == _popupOptions[0])
+      navToSettings();
+    else if(choice == _popupOptions[1])
       Utils.showAlertDialog(context, 
         "Sky Note Keeper", 
         "Developer & Designer =>\n Akash Mondal (Akash98Sky)",
         titleCol: Colors.lightBlue,
         msgCol: Colors.orange
       );
+    else
+      return null;
   }
 
   Color getPriorityColor(int priority) {
     switch (priority) {
       case 0:
         return Colors.red;
-        break;
       case 1:
         return Colors.yellow;
-        break;
+      case 2:
+        return Colors.green;
       default:
         return Colors.blue;
     }
@@ -125,13 +143,13 @@ class NoteListState extends State<NoteList> {
   Icon getPriorityIcon(int priority) {
     switch (priority) {
       case 0:
-        return Icon(Icons.play_arrow);
+        return Icon(Icons.arrow_right);
         break;
       case 1:
-        return Icon(Icons.keyboard_arrow_right);
+        return Icon(Icons.keyboard_arrow_right, color: Colors.black,);
         break;
       default:
-        return Icon(Icons.keyboard_arrow_right);
+        return Icon(Icons.keyboard_arrow_right, color: Colors.black,);
     }
   }
 
@@ -151,17 +169,9 @@ class NoteListState extends State<NoteList> {
     if (result == true) updateListView();
   }
 
-  void updateListView() {
-    final Future<Database> dbFuture = databaseHelper.initializeDatabase();
-    dbFuture.then((database) {
-      Future<List<Note>> noteListFuture = databaseHelper.getNoteList();
-      noteListFuture.then((noteList) {
-        setState(() {
-          this.noteList = noteList;
-          this._count = noteList.length;
-          debugPrint('Updated List View');
-        });
-      });
-    });
+  void navToSettings() async {
+    await Navigator.push(context, MaterialPageRoute(builder: (context) {
+      return NoteSettings();
+    }));
   }
 }

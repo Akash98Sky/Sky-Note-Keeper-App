@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:intl/intl.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/utils/database_helper.dart';
@@ -19,7 +20,8 @@ class NoteDetail extends StatefulWidget {
 class NoteDetailState extends State<NoteDetail> {
   var _formKey = GlobalKey<FormState>();
 
-  var _priorities = ['High', 'Low'];
+  var _priorities = ['High', 'Normal', 'Low'];
+  var _priorityColor = [Colors.red, Colors.yellow, Colors.green];
   int _selectedPriority = 1;
   String appBarTitle;
   Note note;
@@ -63,23 +65,40 @@ class NoteDetailState extends State<NoteDetail> {
             child: ListView(
               children: <Widget>[
                 ListTile(
-                  title: DropdownButton(
-                    items: _priorities.map((String dropDownStringItem) {
-                      return DropdownMenuItem(
-                        value: dropDownStringItem,
-                        child: Text(dropDownStringItem),
-                      );
-                    }).toList(),
-                    style: textStyle,
-                    value: _priorities[_selectedPriority],
-                    onChanged: (String value) {
-                      setState(() {
-                        note.priority = _priorities.indexOf(value);
-                        _selectedPriority = note.priority;
-                      });
-                    },
-                  ),
-                ),
+                    title: Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        "Priority :",
+                        style: textStyle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(),
+                    ),
+                    Expanded(
+                      child: DropdownButton(
+                        items: _priorities.map((String dropDownStringItem) {
+                          return DropdownMenuItem(
+                            value: dropDownStringItem,
+                            child: Text(dropDownStringItem,
+                                style: textStyle.apply(
+                                    color: _priorityColor[_priorities
+                                        .indexOf(dropDownStringItem)])),
+                          );
+                        }).toList(),
+                        isExpanded: true,
+                        value: _priorities[_selectedPriority],
+                        onChanged: (String value) {
+                          setState(() {
+                            note.priority = _priorities.indexOf(value);
+                            _selectedPriority = note.priority;
+                          });
+                        },
+                      ),
+                    )
+                  ],
+                )),
                 Padding(
                   padding: EdgeInsets.only(top: 15, bottom: 15),
                   child: TextFormField(
