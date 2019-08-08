@@ -45,8 +45,8 @@ class NoteDetailState extends State<NoteDetail> {
     TextStyle textStyle = Theme.of(context).textTheme.title;
 
     return WillPopScope(
-      onWillPop: () {
-        moveToLastScreen();
+      onWillPop: () async {
+        return !moveToLastScreen();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -193,7 +193,7 @@ class NoteDetailState extends State<NoteDetail> {
   }
 
   bool moveToLastScreen() {
-    return Navigator.pop(context, true);
+    return Navigator.of(context).pop(true);
   }
 
   void updateTitle() {

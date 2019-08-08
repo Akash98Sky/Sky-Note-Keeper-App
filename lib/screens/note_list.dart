@@ -27,41 +27,65 @@ class NoteListState extends State<NoteList> {
       updateListView();
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: Padding(
-          padding: EdgeInsets.all(4),
-          child: Image.asset(
-            'icons/launcher_icon.png',
-          ),
-        ),
-        title: Text('Notes'),
-        actions: <Widget>[
-          PopupMenuButton<String>(
-            onSelected: choiceAction,
-            itemBuilder: (BuildContext context) {
-              return _popupOptions.map((String choice) {
-                return PopupMenuItem(
-                  value: choice,
-                  child: Text(choice),
-                );
-              }
-              ).toList();
-            },
-          )
-        ],
-      ),
-      body: getNodeListView(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          debugPrint('FAB pressed');
-          navToDetail(Note('', '', 1), 'Add Note');
-          updateListView();
+    return WillPopScope(
+        onWillPop: () async {
+          return _exitAlertDialog();
         },
-        tooltip: 'Add Note',
-        child: Icon(Icons.add_box),
-      ),
-    );
+        child: Scaffold(
+          appBar: AppBar(
+            leading: Padding(
+              padding: EdgeInsets.all(4),
+              child: Image.asset(
+                'icons/launcher_icon.png',
+              ),
+            ),
+            title: Text('Notes'),
+            actions: <Widget>[
+              PopupMenuButton<String>(
+                onSelected: choiceAction,
+                itemBuilder: (BuildContext context) {
+                  return _popupOptions.map((String choice) {
+                    return PopupMenuItem(
+                      value: choice,
+                      child: Text(choice),
+                    );
+                  }).toList();
+                },
+              )
+            ],
+          ),
+          body: getNodeListView(),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              debugPrint('FAB pressed');
+              navToDetail(Note('', '', 1), 'Add Note');
+              updateListView();
+            },
+            tooltip: 'Add Note',
+            child: Icon(Icons.add_box),
+          ),
+        ));
+  }
+
+  bool _exitAlertDialog() {
+    return showDialog(
+          context: context,
+          builder: (context) => new AlertDialog(
+            title: new Text('Are you sure?'),
+            content: new Text('Do you want to exit'),
+            actions: <Widget>[
+              new FlatButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: new Text('No'),
+              ),
+              new FlatButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: new Text('Yes'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   ListView getNodeListView() {
@@ -71,7 +95,6 @@ class NoteListState extends State<NoteList> {
       itemCount: _count,
       itemBuilder: (BuildContext context, int pos) {
         return Card(
-          color: Colors.black,
           elevation: 2.0,
           child: ListTile(
             leading: CircleAvatar(
@@ -114,15 +137,12 @@ class NoteListState extends State<NoteList> {
   }
 
   void choiceAction(String choice) {
-    if(choice == _popupOptions[0])
+    if (choice == _popupOptions[0])
       navToSettings();
-    else if(choice == _popupOptions[1])
-      Utils.showAlertDialog(context, 
-        "Sky Note Keeper", 
-        "Developer & Designer =>\n Akash Mondal (Akash98Sky)",
-        titleCol: Colors.lightBlue,
-        msgCol: Colors.orange
-      );
+    else if (choice == _popupOptions[1])
+      Utils.showAlertDialog(context, "Sky Note Keeper",
+          "Developer & Designer =>\n Akash Mondal (Akash98Sky)",
+          titleCol: Colors.lightBlue, msgCol: Colors.orange);
     else
       return null;
   }
@@ -146,10 +166,16 @@ class NoteListState extends State<NoteList> {
         return Icon(Icons.arrow_right);
         break;
       case 1:
-        return Icon(Icons.keyboard_arrow_right, color: Colors.black,);
+        return Icon(
+          Icons.keyboard_arrow_right,
+          color: Colors.black,
+        );
         break;
       default:
-        return Icon(Icons.keyboard_arrow_right, color: Colors.black,);
+        return Icon(
+          Icons.keyboard_arrow_right,
+          color: Colors.black,
+        );
     }
   }
 
