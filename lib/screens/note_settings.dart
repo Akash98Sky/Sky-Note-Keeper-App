@@ -1,5 +1,7 @@
 import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
+import 'package:note_keeper/main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NoteSettings extends StatefulWidget {
@@ -11,28 +13,36 @@ class NoteSettings extends StatefulWidget {
 
 class NoteSettingsState extends State<NoteSettings> {
   static const _sharedPrefColorKey = "primaryColor";
-  static const _defaultColor = Colors.orange;
 
   static bool _darkMode = false;
-  static final _primaryColors = [
-    Colors.red,
-    Colors.indigo,
-    Colors.orange,
-    Colors.greenAccent,
-    Colors.blueAccent
-  ];
-  static Color _color;
+  static int _selectedColorIndex =
+      MyApp.primaryColors.indexOf(MyApp.defaultColor);
+
+  static Logger log;
+
+  NoteSettingsState() {
+    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
+    log.info("class is loaded...");
+  }
 
   @override
   void initState() {
     super.initState();
-    _color = _defaultColor;
+    _loadColorData();
+    log.info("init complete...");
+  }
+
+  Future<void> _loadColorData() async {
+    _selectedColorIndex = await _loadColorIndex();
+    log.info("Color code loaded : ${MyApp.primaryColors[_selectedColorIndex]}");
     _darkMode =
         DynamicTheme.of(context).brightness == Brightness.dark ? true : false;
   }
 
   @override
   Widget build(BuildContext context) {
+    log.info("Widget build started..");
+
     return WillPopScope(
       onWillPop: () async {
         return !moveToLastScreen();
@@ -75,14 +85,23 @@ class NoteSettingsState extends State<NoteSettings> {
                       style: TextStyle(fontSize: 20),
                     ),
                     DropdownButton(
-                      items: _primaryColors.map(_changeColorMenuItems).toList(),
-                      value: _color,
+                      items: MyApp.primaryColors
+                          .map(_changeColorMenuItems)
+                          .toList(),
+                      value: MyApp.primaryColors[_selectedColorIndex],
                       onChanged: (selectedColor) {
+                        _selectedColorIndex =
+                            MyApp.primaryColors.indexOf(selectedColor);
                         _changeColor(primaryColor: selectedColor);
-                        print("Colour : $_color");
                       },
                     )
                   ],
+                ),
+                FlatButton(
+                  child: Text("Check for Update"),
+                  onPressed: () {
+                    _checkForUpdate();
+                  },
                 ),
               ],
             ),
@@ -90,9 +109,25 @@ class NoteSettingsState extends State<NoteSettings> {
     );
   }
 
+  void _checkForUpdate() {
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text("Checking for updates..."),
+            content: Container(
+              child: LinearProgressIndicator(
+                semanticsLabel: "Checking For updates...",
+                semanticsValue: "100",
+                value: null,
+              ),
+            ),
+          );
+        });
+  }
+
   DropdownMenuItem _changeColorMenuItems(Color value) {
-    if (DynamicTheme.of(context).data.primaryColor == value)
-      _color = value;
     return DropdownMenuItem(
       value: value,
       child: Container(
@@ -106,24 +141,35 @@ class NoteSettingsState extends State<NoteSettings> {
 
   void _setDarkMode(bool isDark) {
     _darkMode = isDark;
+
     DynamicTheme.of(context)
         .setBrightness(isDark ? Brightness.dark : Brightness.light);
-    if (DynamicTheme.of(context).data.primaryColor != _color)
-      _changeColor(primaryColor: _color);
+
+    if (DynamicTheme.of(context).data.primaryColor !=
+        MyApp.primaryColors[_selectedColorIndex])
+      _changeColor(primaryColor: MyApp.primaryColors[_selectedColorIndex]);
   }
 
   void _changeColor({Color primaryColor}) {
-    _color = primaryColor;
     DynamicTheme.of(context).setThemeData(ThemeData(
-        brightness: _darkMode ? Brightness.dark : Brightness.light,
-        primaryColor: primaryColor));
-    _saveColor(primaryColor);
+      brightness: _darkMode ? Brightness.dark : Brightness.light,
+      primarySwatch: primaryColor,
+    ));
+    _saveColorIndex(_selectedColorIndex);
   }
 
-  Future<void> _saveColor(Color primaryColor) async {
+  Future<void> _saveColorIndex(int primaryColorIndex) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_sharedPrefColorKey, primaryColor.value);
-    print("Colour code :: ${primaryColor.value}");
+    prefs.setInt(_sharedPrefColorKey, primaryColorIndex);
+    
+    log.info("Colour code saved :: ${MyApp.primaryColors[primaryColorIndex]}");
+  }
+
+  Future<int> _loadColorIndex() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    return prefs.getInt(_sharedPrefColorKey) ??
+        MyApp.primaryColors.indexOf(MyApp.defaultColor);
   }
 
   bool moveToLastScreen() {

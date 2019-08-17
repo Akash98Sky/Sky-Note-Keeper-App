@@ -1,10 +1,11 @@
+import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/screens/note_detail.dart';
 import 'package:note_keeper/screens/note_settings.dart';
 import 'package:note_keeper/utils/database_helper.dart';
 import 'package:note_keeper/utils/utils.dart';
-import 'package:sqflite/sqlite_api.dart';
 
 class NoteList extends StatefulWidget {
   @override
@@ -14,23 +15,36 @@ class NoteList extends StatefulWidget {
 }
 
 class NoteListState extends State<NoteList> {
+  static const List<String> _popupOptions = ['Settings', 'About'];
+
+  static Logger log;
+
   DatabaseHelper databaseHelper = DatabaseHelper();
   List<Note> noteList;
   int _count = 0;
 
-  List<String> _popupOptions = ['Settings', 'About'];
+  NoteListState() {
+    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
+    log.info("class is loaded...");
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    updateListView().whenComplete(() {
+      if (noteList == null) noteList = List<Note>();
+    });
+
+    log.info("init complete...");
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (noteList == null) {
-      noteList = List<Note>();
-      updateListView();
-    }
+    log.info("Widget build started...");
 
     return WillPopScope(
-        onWillPop: () async {
-          return _exitAlertDialog();
-        },
+        onWillPop: () async => _exitAlertDialog(context),
         child: Scaffold(
           appBar: AppBar(
             leading: Padding(
@@ -57,30 +71,37 @@ class NoteListState extends State<NoteList> {
           body: getNodeListView(),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
-              debugPrint('FAB pressed');
+              log.info("FAB pressed");
               navToDetail(Note('', '', 1), 'Add Note');
-              updateListView();
             },
             tooltip: 'Add Note',
             child: Icon(Icons.add_box),
+            backgroundColor:
+                DynamicTheme.of(context).brightness == Brightness.dark
+                    ? Colors.black
+                    : null,
+            foregroundColor:
+                DynamicTheme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : null,
           ),
         ));
   }
 
-  bool _exitAlertDialog() {
+  bool _exitAlertDialog(BuildContext context) {
     return showDialog(
           context: context,
-          builder: (context) => new AlertDialog(
-            title: new Text('Are you sure?'),
-            content: new Text('Do you want to exit'),
+          builder: (context) => AlertDialog(
+            title: Text('Are you sure?'),
+            content: Text('Do you want to exit'),
             actions: <Widget>[
-              new FlatButton(
+              FlatButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: new Text('No'),
+                child: Text('No'),
               ),
-              new FlatButton(
+              FlatButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: new Text('Yes'),
+                child: Text('Yes'),
               ),
             ],
           ),
@@ -96,6 +117,9 @@ class NoteListState extends State<NoteList> {
       itemBuilder: (BuildContext context, int pos) {
         return Card(
           elevation: 2.0,
+          color: DynamicTheme.of(context).brightness == Brightness.dark
+              ? Colors.black12
+              : null,
           child: ListTile(
             leading: CircleAvatar(
               child: getPriorityIcon(this.noteList[pos].priority),
@@ -122,18 +146,16 @@ class NoteListState extends State<NoteList> {
     );
   }
 
-  void updateListView() {
-    final Future<Database> dbFuture = databaseHelper.initializeDatabase();
-    dbFuture.then((database) {
-      Future<List<Note>> noteListFuture = databaseHelper.getNoteList();
-      noteListFuture.then((noteList) {
-        setState(() {
-          this.noteList = noteList;
-          this._count = noteList.length;
-          debugPrint('Updated List View');
-        });
+  Future<void> updateListView() async {
+    await databaseHelper.initializeDatabase();
+
+    this.noteList = await databaseHelper.getNoteList();
+    if (noteList != null && this._count != noteList.length)
+      setState(() {
+        this._count = noteList.length;
       });
-    });
+
+    log.info("Updated List View");
   }
 
   void choiceAction(String choice) {
@@ -150,7 +172,7 @@ class NoteListState extends State<NoteList> {
   Color getPriorityColor(int priority) {
     switch (priority) {
       case 0:
-        return Colors.red;
+        return Colors.red[500];
       case 1:
         return Colors.yellow;
       case 2:
@@ -163,17 +185,20 @@ class NoteListState extends State<NoteList> {
   Icon getPriorityIcon(int priority) {
     switch (priority) {
       case 0:
-        return Icon(Icons.arrow_right);
+        return Icon(
+          Icons.priority_high,
+          color: Colors.black,
+        );
         break;
       case 1:
         return Icon(
-          Icons.keyboard_arrow_right,
+          Icons.rotate_right,
           color: Colors.black,
         );
         break;
       default:
         return Icon(
-          Icons.keyboard_arrow_right,
+          Icons.low_priority,
           color: Colors.black,
         );
     }

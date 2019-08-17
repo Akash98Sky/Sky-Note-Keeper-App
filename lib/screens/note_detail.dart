@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:intl/intl.dart';
+import 'package:logging/logging.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/utils/database_helper.dart';
 import 'package:note_keeper/utils/utils.dart';
@@ -18,10 +19,13 @@ class NoteDetail extends StatefulWidget {
 }
 
 class NoteDetailState extends State<NoteDetail> {
+  static const _priorities = ['High', 'Normal', 'Low'];
+  static const  _priorityColor = [Colors.red, Colors.yellow, Colors.green];
+
+  static Logger log;
+
   var _formKey = GlobalKey<FormState>();
 
-  var _priorities = ['High', 'Normal', 'Low'];
-  var _priorityColor = [Colors.red, Colors.yellow, Colors.green];
   int _selectedPriority = 1;
   String appBarTitle;
   Note note;
@@ -30,7 +34,10 @@ class NoteDetailState extends State<NoteDetail> {
   TextEditingController titleControler = TextEditingController();
   TextEditingController descriptionControler = TextEditingController();
 
-  NoteDetailState(this.note, this.appBarTitle);
+  NoteDetailState(this.note, this.appBarTitle ) {
+    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
+    log.info("class is loaded...");
+  }
 
   @override
   void initState() {
@@ -38,6 +45,7 @@ class NoteDetailState extends State<NoteDetail> {
     titleControler.text = note.title;
     descriptionControler.text = note.description;
     _selectedPriority = note.priority;
+    log.info("init complete...");
   }
 
   @override
@@ -106,7 +114,7 @@ class NoteDetailState extends State<NoteDetail> {
                     controller: titleControler,
                     style: textStyle,
                     onFieldSubmitted: (value) {
-                      debugPrint('Something changes in Title Text Field');
+                      log.info("Something changed in Title Text Field");
                       updateTitle();
                     },
                     validator: (value) {
@@ -133,7 +141,7 @@ class NoteDetailState extends State<NoteDetail> {
                     controller: descriptionControler,
                     style: textStyle,
                     onFieldSubmitted: (value) {
-                      debugPrint('Something changes in Description Text Field');
+                      log.info("Something changed in Description Text Field");
                       updateDescription();
                     },
                     validator: (value) {
@@ -162,7 +170,7 @@ class NoteDetailState extends State<NoteDetail> {
                           child: Text('Save', textScaleFactor: 1.5),
                           onPressed: () {
                             setState(() {
-                              debugPrint('Saved button clicked');
+                              log.info("Saved button clicked");
                               if (_formKey.currentState.validate()) _save();
                             });
                           },
@@ -177,7 +185,7 @@ class NoteDetailState extends State<NoteDetail> {
                           child: Text('Delete', textScaleFactor: 1.5),
                           onPressed: () {
                             setState(() {
-                              debugPrint('Delete button clicked');
+                              log.info("Delete button clicked");
                               _delete();
                             });
                           },
@@ -232,6 +240,7 @@ class NoteDetailState extends State<NoteDetail> {
     }
 
     int result = await helper.deleteNote(note.id);
+
     if (result != 0) {
       Utils.showAlertDialog(context, 'Status', 'Note Deleted Successfully');
     } else {
