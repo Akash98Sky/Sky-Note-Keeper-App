@@ -33,6 +33,10 @@ dependencies:
 
   logging: ^0.11.3+2
 
+  cloud_firestore: ^0.12.9
+
+  connectivity: ^0.4.3+7
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

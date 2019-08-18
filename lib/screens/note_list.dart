@@ -1,3 +1,4 @@
+import 'package:connectivity/connectivity.dart';
 import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
@@ -42,6 +43,7 @@ class NoteListState extends State<NoteList> {
   @override
   Widget build(BuildContext context) {
     log.info("Widget build started...");
+    IconData _syncIcon = Icons.sync;
 
     return WillPopScope(
         onWillPop: () async => _exitAlertDialog(context),
@@ -55,6 +57,35 @@ class NoteListState extends State<NoteList> {
             ),
             title: Text('Notes'),
             actions: <Widget>[
+              Padding(
+                  padding: EdgeInsets.only(right: 15),
+                  child: ConnectivityWidget()),
+              GestureDetector(
+                child: Padding(
+                  padding: EdgeInsets.only(left: 5, right: 5),
+                  child: Icon(_syncIcon),
+                ),
+                onTap: () async {
+                  if (ConnectivityIndicator.isOnline)
+                    setState(() {
+                      _syncIcon = Icons.sync;
+                    });
+                  else {
+                    setState(() {
+                      _syncIcon = Icons.sync_disabled;
+                    });
+                    return;
+                  }
+                  if (await databaseHelper.syncNotes()) {
+                    log.info("Notes synced successfully...");
+                  } else {
+                    log.warning("Failed to sync notes...");
+                    setState(() {
+                      _syncIcon = Icons.sync_problem;
+                    });
+                  }
+                },
+              ),
               PopupMenuButton<String>(
                 onSelected: choiceAction,
                 itemBuilder: (BuildContext context) {
@@ -187,7 +218,7 @@ class NoteListState extends State<NoteList> {
       case 0:
         return Icon(
           Icons.priority_high,
-          color: Colors.black,
+          color: Colors.white,
         );
         break;
       case 1:
@@ -207,6 +238,7 @@ class NoteListState extends State<NoteList> {
   void _delete(BuildContext context, Note note) async {
     int result = await databaseHelper.deleteNote(note.id);
     if (result != 0) {
+      Scaffold.of(context).hideCurrentSnackBar();
       Utils.showSnackBar(context, 'Note Deleted Successfully!');
       updateListView();
     }
@@ -224,5 +256,60 @@ class NoteListState extends State<NoteList> {
     await Navigator.push(context, MaterialPageRoute(builder: (context) {
       return NoteSettings();
     }));
+  }
+}
+
+class ConnectivityWidget extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return ConnectivityIndicator();
+  }
+}
+
+class ConnectivityIndicator extends State<ConnectivityWidget> {
+  static bool isOnline = false;
+  static var _subscription;
+  static Logger log;
+
+  ConnectivityIndicator() {
+    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _subscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult result) {
+      log.info("Connectivity => $result");
+      if ((result == ConnectivityResult.mobile ||
+              result == ConnectivityResult.wifi) &&
+          isOnline == false)
+        setState(() {
+          isOnline = true;
+        });
+      else if (isOnline == true)
+        setState(() {
+          isOnline = false;
+        });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      child: CircleAvatar(
+        backgroundColor: isOnline ? Colors.green : Colors.red[800],
+        radius: 9,
+      ),
+      backgroundColor: Colors.white,
+      radius: 12,
+    );
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
   }
 }
