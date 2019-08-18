@@ -36,7 +36,7 @@ class NoteDetailState extends State<NoteDetail> {
 
   NoteDetailState(this.note, this.appBarTitle ) {
     log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-    log.info("class is loaded...");
+    log.fine("class is loaded...");
   }
 
   @override
@@ -45,11 +45,12 @@ class NoteDetailState extends State<NoteDetail> {
     titleControler.text = note.title;
     descriptionControler.text = note.description;
     _selectedPriority = note.priority;
-    log.info("init complete...");
+    log.finer("init complete...");
   }
 
   @override
   Widget build(BuildContext context) {
+    log.finest("Widget build started...");
     TextStyle textStyle = Theme.of(context).textTheme.title;
 
     return WillPopScope(

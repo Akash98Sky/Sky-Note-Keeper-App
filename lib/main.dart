@@ -5,7 +5,7 @@ import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
-  Logger.root.level = Level.ALL;
+  Logger.root.level = Level.FINER;
   Logger.root.onRecord.listen((LogRecord rec) {
     print('${rec.level.name}: ${rec.loggerName}: ${rec.message}');
   });
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   static Color _color;
 
   MyApp() {
-    log.info("class is loaded...");
+    log.fine("class is loaded...");
   }
 
   @override

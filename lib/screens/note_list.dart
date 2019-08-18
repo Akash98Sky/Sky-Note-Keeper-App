@@ -1,10 +1,10 @@
-import 'package:connectivity/connectivity.dart';
 import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:note_keeper/models/note.dart';
 import 'package:note_keeper/screens/note_detail.dart';
 import 'package:note_keeper/screens/note_settings.dart';
+import 'package:note_keeper/screens/widgets/connectivity_widget.dart';
 import 'package:note_keeper/utils/database_helper.dart';
 import 'package:note_keeper/utils/utils.dart';
 
@@ -26,7 +26,7 @@ class NoteListState extends State<NoteList> {
 
   NoteListState() {
     log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-    log.info("class is loaded...");
+    log.fine("class is loaded...");
   }
 
   @override
@@ -37,12 +37,12 @@ class NoteListState extends State<NoteList> {
       if (noteList == null) noteList = List<Note>();
     });
 
-    log.info("init complete...");
+    log.finer("init complete...");
   }
 
   @override
   Widget build(BuildContext context) {
-    log.info("Widget build started...");
+    log.finest("Widget build started...");
     IconData _syncIcon = Icons.sync;
 
     return WillPopScope(
@@ -186,7 +186,7 @@ class NoteListState extends State<NoteList> {
         this._count = noteList.length;
       });
 
-    log.info("Updated List View");
+    log.finest("Updated List View");
   }
 
   void choiceAction(String choice) {
@@ -257,59 +257,12 @@ class NoteListState extends State<NoteList> {
       return NoteSettings();
     }));
   }
-}
-
-class ConnectivityWidget extends StatefulWidget {
-  @override
-  State<StatefulWidget> createState() {
-    return ConnectivityIndicator();
-  }
-}
-
-class ConnectivityIndicator extends State<ConnectivityWidget> {
-  static bool isOnline = false;
-  static var _subscription;
-  static Logger log;
-
-  ConnectivityIndicator() {
-    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _subscription = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) {
-      log.info("Connectivity => $result");
-      if ((result == ConnectivityResult.mobile ||
-              result == ConnectivityResult.wifi) &&
-          isOnline == false)
-        setState(() {
-          isOnline = true;
-        });
-      else if (isOnline == true)
-        setState(() {
-          isOnline = false;
-        });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CircleAvatar(
-      child: CircleAvatar(
-        backgroundColor: isOnline ? Colors.green : Colors.red[800],
-        radius: 9,
-      ),
-      backgroundColor: Colors.white,
-      radius: 12,
-    );
-  }
 
   @override
   void dispose() {
-    _subscription.cancel();
+    databaseHelper.dispose();
+    noteList.clear();
+    log.clearListeners();
     super.dispose();
   }
 }

@@ -29,7 +29,7 @@ class NoteSettingsState extends State<NoteSettings> {
   void initState() {
     super.initState();
     _loadColorData();
-    log.info("init complete...");
+    log.finest("init complete...");
   }
 
   Future<void> _loadColorData() async {
@@ -41,7 +41,7 @@ class NoteSettingsState extends State<NoteSettings> {
 
   @override
   Widget build(BuildContext context) {
-    log.info("Widget build started..");
+    log.finest("Widget build started..");
 
     return WillPopScope(
       onWillPop: () async {
@@ -64,7 +64,7 @@ class NoteSettingsState extends State<NoteSettings> {
                     GestureDetector(
                       onTap: () {
                         _setDarkMode(!_darkMode);
-                        print("Dark Mode : $_darkMode");
+                        log.info("Dark Mode : $_darkMode");
                       },
                       child: Text(
                         "Dark Mode",
@@ -75,7 +75,7 @@ class NoteSettingsState extends State<NoteSettings> {
                         value: _darkMode,
                         onChanged: (value) {
                           _setDarkMode(value);
-                          print("Dark Mode : $_darkMode");
+                          log.info("Dark Mode : $_darkMode");
                         }),
                     Container(
                       width: 20,

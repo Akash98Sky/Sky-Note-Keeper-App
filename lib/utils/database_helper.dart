@@ -1,28 +1,34 @@
 import 'dart:async';
 import 'dart:core';
 import 'dart:io';
+import 'package:logging/logging.dart';
 import 'package:note_keeper/utils/firestore_helper.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:note_keeper/models/note.dart';
 
 class DatabaseHelper {
+  static const String noteTable = 'note_table';
+  static const String colId = 'id';
+  static const String colTitle = 'title';
+  static const String colDescription = 'description';
+  static const String colPriority = 'priority';
+  static const String colDate = 'date';
+  static const String _sharedPrefPendingChanges = 'firestorePendingChanges';
+  static const String _sharedPrefPendingDeletes = 'firestorePendingDeletes';
+
   static DatabaseHelper _databaseHelper;
   static Database _database;
+  static Logger log;
 
-  static final String noteTable = 'note_table';
-  static final String colId = 'id';
-  static final String colTitle = 'title';
-  static final String colDescription = 'description';
-  static final String colPriority = 'priority';
-  static final String colDate = 'date';
   static final FirestoreHelper firestoreHelper = FirestoreHelper('notes');
 
-  List<int> _pendingDeletes, _pendingChanges;
+  List<String> _pendingDeletes, _pendingChanges;
 
   DatabaseHelper._createInstance() {
-    _pendingChanges = List<int>();
-    _pendingDeletes = List<int>();
+    _loadPendingNotes();
+    log = Logger(this.toString().split("'")[1]);
   }
 
   factory DatabaseHelper() {
@@ -66,13 +72,15 @@ class DatabaseHelper {
     Database db = await this.database;
     Map<String, dynamic> map = note.toMap();
 
-    var result = await db.insert(noteTable, map);
-    var id = await db.query(noteTable, columns: [
-      'max($colId)'
-    ]); // As 'id' column is autoincrement so max('id') will give the id of last inserted values
+    int result = await db.insert(noteTable, map);
+    String id = (await db.query(noteTable, columns: ['max($colId)']))[0]
+            ['max(id)']
+        .toString(); // As 'id' column is autoincrement so max('id') will give the id of last inserted values
 
-    if (!firestoreHelper.uploadNote(id[0]['max(id)'], map))
-      _pendingChanges.add(id[0]['max(id)']);
+    if (!firestoreHelper.uploadNote(id, map)) {
+      _pendingChanges.add(id);
+      _savePendingChanges();
+    }
     return result;
   }
 
@@ -80,10 +88,13 @@ class DatabaseHelper {
     Database db = await this.database;
     Map<String, dynamic> map = note.toMap();
 
-    var result = await db
+    int result = await db
         .update(noteTable, map, where: '$colId = ?', whereArgs: [note.id]);
 
-    if (!firestoreHelper.uploadNote(note.id, map)) _pendingChanges.add(note.id);
+    if (!firestoreHelper.uploadNote(note.id.toString(), map) && !_pendingChanges.contains(note.id.toString())) {
+      _pendingChanges.add(note.id.toString());
+      _savePendingChanges();
+    }
     return result;
   }
 
@@ -92,10 +103,13 @@ class DatabaseHelper {
     int result =
         await db.rawDelete('delete from $noteTable where $colId = $id');
 
-    if (!firestoreHelper.deleteNote(id)) {
-      if (_pendingChanges.remove(id)){}
-      else
-        _pendingDeletes.add(id);
+    if (!firestoreHelper.deleteNote(id.toString())) {
+      if (_pendingChanges.remove(id.toString())) {
+        _savePendingChanges();
+      } else {
+        _pendingDeletes.add(id.toString());
+        _savePendingDeletes();
+      }
     }
     return result;
   }
@@ -103,26 +117,69 @@ class DatabaseHelper {
   Future<bool> syncNotes() async {
     Database db = await this.database;
 
-    if (_pendingChanges.isNotEmpty)
-      while (_pendingChanges.isNotEmpty) {
-        int id = _pendingChanges[0];
-        Map<String, dynamic> map =
-            (await db.query(noteTable, where: '$colId = $id'))[0];
-        if (firestoreHelper.uploadNote(id, map))
-          _pendingChanges.remove(id);
-        else
-          break;
-      }
-    if (_pendingDeletes.isNotEmpty)
+    if (_pendingDeletes.isNotEmpty) {
       while (_pendingDeletes.isNotEmpty) {
-        int id = _pendingDeletes[0];
+        String id = _pendingDeletes[0];
         if (firestoreHelper.deleteNote(id))
           _pendingDeletes.remove(id);
         else
           break;
       }
+      _savePendingDeletes();
+    }
+    if (_pendingChanges.isNotEmpty) {
+      while (_pendingChanges.isNotEmpty) {
+        String id = _pendingChanges[0];
+        Map<String, dynamic> map =
+            (await db.query(noteTable, where: '$colId = ${int.parse(id)}'))[0];
+        if (firestoreHelper.uploadNote(id, map))
+          _pendingChanges.remove(id);
+        else
+          break;
+      }
+      _savePendingChanges();
+    }
+
     if (_pendingChanges.isEmpty && _pendingDeletes.isEmpty) return true;
     return false;
+  }
+
+  Future<void> _savePendingChanges() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    if (!await prefs.setStringList(_sharedPrefPendingChanges, _pendingChanges))
+      log.severe("Failed to save pending changes.");
+    else
+      log.info("Saved : Pending Changes => ${_pendingChanges.toString()}");
+  }
+
+  Future<void> _savePendingDeletes() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    if (!await prefs.setStringList(_sharedPrefPendingDeletes, _pendingDeletes))
+      log.severe("Failed to save pending deletes.");
+    else
+      log.info("Saved : Pending Deletes => ${_pendingDeletes.toString()}");
+  }
+
+  Future<void> _loadPendingNotes() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    try {
+      _pendingChanges =
+          prefs.getStringList(_sharedPrefPendingChanges) ?? List<String>();
+      log.info("Loaded : Pending Changes => ${_pendingChanges.toString()}");
+    } catch (E) {
+      log.severe("$E | Failed to load pending changes.");
+    }
+
+    try {
+      _pendingDeletes =
+          prefs.getStringList(_sharedPrefPendingDeletes) ?? List<String>();
+      log.info("Loaded : Pending Deletes => ${_pendingDeletes.toString()}");
+    } catch (E) {
+      log.severe("$E | Failed to load pending deteles.");
+    }
   }
 
   Future<int> getCount() async {
@@ -144,5 +201,12 @@ class DatabaseHelper {
     }
 
     return noteList;
+  }
+
+  void dispose() { 
+    _pendingChanges.clear();
+    _pendingDeletes.clear();
+    _database.close();
+    log.clearListeners();
   }
 }
