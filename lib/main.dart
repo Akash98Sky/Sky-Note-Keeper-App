@@ -15,7 +15,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  static final Logger log = new Logger('MyApp');
+  static final Logger _log = new Logger('MyApp');
 
   static const _sharedPrefColorKey = "primaryColor";
   static const List<Color> primaryColors = [
@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
   static Color _color;
 
   MyApp() {
-    log.fine("class is loaded...");
+    _log.fine("class is loaded...");
   }
 
   @override
@@ -55,6 +55,6 @@ class MyApp extends StatelessWidget {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     _color = primaryColors[prefs.getInt(_sharedPrefColorKey) ??
         MyApp.primaryColors.indexOf(MyApp.defaultColor)];
-    log.info("Colour code loaded :: $_color");
+    _log.info("Colour code loaded :: $_color");
   }
 }

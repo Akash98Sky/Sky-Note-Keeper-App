@@ -2,6 +2,8 @@ import 'package:dynamic_theme/dynamic_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:note_keeper/main.dart';
+import 'package:note_keeper/screens/widgets/update_check_widget.dart';
+import 'package:note_keeper/utils/packageinfo_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class NoteSettings extends StatefulWidget {
@@ -17,31 +19,33 @@ class NoteSettingsState extends State<NoteSettings> {
   static bool _darkMode = false;
   static int _selectedColorIndex =
       MyApp.primaryColors.indexOf(MyApp.defaultColor);
+  static Logger _log;
 
-  static Logger log;
+  final PackageInfoHelper packageInfo = PackageInfoHelper();
 
   NoteSettingsState() {
-    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-    log.info("class is loaded...");
+    if(_log == null)
+      _log = Logger(this.toString(minLevel: DiagnosticLevel.hint).split("#")[0]);
+    _log.info("class is loaded...");
   }
 
   @override
   void initState() {
     super.initState();
     _loadColorData();
-    log.finest("init complete...");
+    _log.finest("init complete...");
   }
 
   Future<void> _loadColorData() async {
     _selectedColorIndex = await _loadColorIndex();
-    log.info("Color code loaded : ${MyApp.primaryColors[_selectedColorIndex]}");
+    _log.info("Color code loaded : ${MyApp.primaryColors[_selectedColorIndex]}");
     _darkMode =
         DynamicTheme.of(context).brightness == Brightness.dark ? true : false;
   }
 
   @override
   Widget build(BuildContext context) {
-    log.finest("Widget build started..");
+    _log.finest("Widget build started..");
 
     return WillPopScope(
       onWillPop: () async {
@@ -64,7 +68,7 @@ class NoteSettingsState extends State<NoteSettings> {
                     GestureDetector(
                       onTap: () {
                         _setDarkMode(!_darkMode);
-                        log.info("Dark Mode : $_darkMode");
+                        _log.info("Dark Mode : $_darkMode");
                       },
                       child: Text(
                         "Dark Mode",
@@ -75,7 +79,7 @@ class NoteSettingsState extends State<NoteSettings> {
                         value: _darkMode,
                         onChanged: (value) {
                           _setDarkMode(value);
-                          log.info("Dark Mode : $_darkMode");
+                          _log.info("Dark Mode : $_darkMode");
                         }),
                     Container(
                       width: 20,
@@ -97,34 +101,28 @@ class NoteSettingsState extends State<NoteSettings> {
                     )
                   ],
                 ),
-                FlatButton(
-                  child: Text("Check for Update"),
+                Padding(
+                  padding: const EdgeInsets.only(top: 25, bottom: 5),
+                  child:
+                      Text("${packageInfo.appName} v${packageInfo.appVersion}"),
+                ),
+                RaisedButton(
+                  elevation: 5.0,
+                  child:
+                      Text("Check for Update", style: TextStyle(fontSize: 15)),
                   onPressed: () {
-                    _checkForUpdate();
+                    showDialog(
+                        barrierDismissible: false,
+                        context: context,
+                        builder: (context) {
+                          return CheckUpdateAlert();
+                        });
                   },
                 ),
               ],
             ),
           )),
     );
-  }
-
-  void _checkForUpdate() {
-    showDialog(
-        barrierDismissible: false,
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text("Checking for updates..."),
-            content: Container(
-              child: LinearProgressIndicator(
-                semanticsLabel: "Checking For updates...",
-                semanticsValue: "100",
-                value: null,
-              ),
-            ),
-          );
-        });
   }
 
   DropdownMenuItem _changeColorMenuItems(Color value) {
@@ -161,8 +159,8 @@ class NoteSettingsState extends State<NoteSettings> {
   Future<void> _saveColorIndex(int primaryColorIndex) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.setInt(_sharedPrefColorKey, primaryColorIndex);
-    
-    log.info("Colour code saved :: ${MyApp.primaryColors[primaryColorIndex]}");
+
+    _log.info("Colour code saved :: ${MyApp.primaryColors[primaryColorIndex]}");
   }
 
   Future<int> _loadColorIndex() async {

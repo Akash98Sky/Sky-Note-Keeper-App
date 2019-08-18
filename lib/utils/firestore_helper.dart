@@ -3,21 +3,27 @@ import 'package:logging/logging.dart';
 import 'package:note_keeper/screens/widgets/connectivity_widget.dart';
 
 class FirestoreHelper {
-  static Logger log;
-
+  static FirestoreHelper _firestoreHelper;
+  static Logger _log;
+  
   String _myDoc;
+  List<dynamic> list;
 
-  FirestoreHelper(this._myDoc) {
-    log = Logger(this.toString().split("'")[1]);
+  FirestoreHelper._createInstance(this._myDoc) {
+    if (_log == null) _log = Logger(this.toString().split("'")[1]);
+  }
+
+  factory FirestoreHelper(String collection) {
+    if (_firestoreHelper == null)
+      _firestoreHelper = FirestoreHelper._createInstance(collection);
+    print(collection);
+    return _firestoreHelper;
   }
 
   bool uploadNote(String id, Map<String, dynamic> map) {
     if (ConnectivityIndicator.isOnline) {
-      Firestore.instance
-          .collection(_myDoc)
-          .document(id)
-          .setData(map);
-      log.info("Note uploaded to firestore : id => $id");
+      Firestore.instance.collection(_myDoc).document(id).setData(map);
+      _log.info("Note uploaded to firestore : id => $id");
       return true;
     }
     return false;
@@ -26,9 +32,27 @@ class FirestoreHelper {
   bool deleteNote(String id) {
     if (ConnectivityIndicator.isOnline) {
       Firestore.instance.collection(_myDoc).document(id).delete();
-      log.info("Note deleted from firestore : id => $id");
+      _log.info("Note deleted from firestore : id => $id");
       return true;
     }
     return false;
+  }
+
+  List<dynamic> getLatestAppDetails() {
+    print(_myDoc);
+    list = List<dynamic>();
+    if (ConnectivityIndicator.isOnline) {
+      Firestore.instance
+          .collection("AppDoc")
+          .document("updates")
+          .get()
+          .then((snap) {
+        list.addAll(
+            [snap.data['build'], snap.data['version'], snap.data['url']]);
+        return;
+      });
+      _log.info("Latest App Details : $list");
+    }
+    return list;
   }
 }

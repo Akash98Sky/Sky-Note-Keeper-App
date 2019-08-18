@@ -20,15 +20,15 @@ class DatabaseHelper {
 
   static DatabaseHelper _databaseHelper;
   static Database _database;
-  static Logger log;
+  static Logger _log;
 
-  static final FirestoreHelper firestoreHelper = FirestoreHelper('notes');
+  static FirestoreHelper firestoreHelper = FirestoreHelper('notes');
 
   List<String> _pendingDeletes, _pendingChanges;
 
   DatabaseHelper._createInstance() {
     _loadPendingNotes();
-    log = Logger(this.toString().split("'")[1]);
+    _log = Logger(this.toString().split("'")[1]);
   }
 
   factory DatabaseHelper() {
@@ -148,18 +148,18 @@ class DatabaseHelper {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     if (!await prefs.setStringList(_sharedPrefPendingChanges, _pendingChanges))
-      log.severe("Failed to save pending changes.");
+      _log.severe("Failed to save pending changes.");
     else
-      log.info("Saved : Pending Changes => ${_pendingChanges.toString()}");
+      _log.info("Saved : Pending Changes => ${_pendingChanges.toString()}");
   }
 
   Future<void> _savePendingDeletes() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     if (!await prefs.setStringList(_sharedPrefPendingDeletes, _pendingDeletes))
-      log.severe("Failed to save pending deletes.");
+      _log.severe("Failed to save pending deletes.");
     else
-      log.info("Saved : Pending Deletes => ${_pendingDeletes.toString()}");
+      _log.info("Saved : Pending Deletes => ${_pendingDeletes.toString()}");
   }
 
   Future<void> _loadPendingNotes() async {
@@ -168,17 +168,17 @@ class DatabaseHelper {
     try {
       _pendingChanges =
           prefs.getStringList(_sharedPrefPendingChanges) ?? List<String>();
-      log.info("Loaded : Pending Changes => ${_pendingChanges.toString()}");
+      _log.info("Loaded : Pending Changes => ${_pendingChanges.toString()}");
     } catch (E) {
-      log.severe("$E | Failed to load pending changes.");
+      _log.severe("$E | Failed to load pending changes.");
     }
 
     try {
       _pendingDeletes =
           prefs.getStringList(_sharedPrefPendingDeletes) ?? List<String>();
-      log.info("Loaded : Pending Deletes => ${_pendingDeletes.toString()}");
+      _log.info("Loaded : Pending Deletes => ${_pendingDeletes.toString()}");
     } catch (E) {
-      log.severe("$E | Failed to load pending deteles.");
+      _log.severe("$E | Failed to load pending deteles.");
     }
   }
 
@@ -207,6 +207,6 @@ class DatabaseHelper {
     _pendingChanges.clear();
     _pendingDeletes.clear();
     _database.close();
-    log.clearListeners();
+    _log.clearListeners();
   }
 }

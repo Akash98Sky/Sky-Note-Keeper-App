@@ -12,10 +12,11 @@ class ConnectivityWidget extends StatefulWidget {
 class ConnectivityIndicator extends State<ConnectivityWidget> {
   static bool isOnline = false;
   static var _subscription;
-  static Logger log;
+  static Logger _log;
 
   ConnectivityIndicator() {
-    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
+    if (_log == null)
+      _log = Logger(this.toString(minLevel: DiagnosticLevel.hint).split("#")[0]);
   }
 
   @override
@@ -24,7 +25,7 @@ class ConnectivityIndicator extends State<ConnectivityWidget> {
     _subscription = Connectivity()
         .onConnectivityChanged
         .listen((ConnectivityResult result) {
-      log.info("Connectivity => $result");
+      _log.info("Connectivity => $result");
       if ((result == ConnectivityResult.mobile ||
               result == ConnectivityResult.wifi) &&
           isOnline == false)
@@ -40,13 +41,16 @@ class ConnectivityIndicator extends State<ConnectivityWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return CircleAvatar(
+    return Tooltip(
       child: CircleAvatar(
-        backgroundColor: isOnline ? Colors.green[800] : Colors.red[800],
-        radius: 9,
+        child: CircleAvatar(
+          backgroundColor: isOnline ? Colors.lightGreen : Colors.redAccent,
+          radius: 9,
+        ),
+        backgroundColor: Colors.white,
+        radius: 12,
       ),
-      backgroundColor: Colors.white,
-      radius: 12,
+      message: "Connectivity Status",
     );
   }
 

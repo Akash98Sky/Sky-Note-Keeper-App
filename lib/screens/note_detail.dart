@@ -20,9 +20,9 @@ class NoteDetail extends StatefulWidget {
 
 class NoteDetailState extends State<NoteDetail> {
   static const _priorities = ['High', 'Normal', 'Low'];
-  static const  _priorityColor = [Colors.red, Colors.yellow, Colors.green];
+  static const _priorityColor = [Colors.red, Colors.yellow, Colors.green];
 
-  static Logger log;
+  static Logger _log;
 
   var _formKey = GlobalKey<FormState>();
 
@@ -34,9 +34,10 @@ class NoteDetailState extends State<NoteDetail> {
   TextEditingController titleControler = TextEditingController();
   TextEditingController descriptionControler = TextEditingController();
 
-  NoteDetailState(this.note, this.appBarTitle ) {
-    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-    log.fine("class is loaded...");
+  NoteDetailState(this.note, this.appBarTitle) {
+    if (_log == null)
+      _log = Logger(this.toString(minLevel: DiagnosticLevel.hint).split("#")[0]);
+    _log.fine("class is loaded...");
   }
 
   @override
@@ -45,12 +46,12 @@ class NoteDetailState extends State<NoteDetail> {
     titleControler.text = note.title;
     descriptionControler.text = note.description;
     _selectedPriority = note.priority;
-    log.finer("init complete...");
+    _log.finer("init complete...");
   }
 
   @override
   Widget build(BuildContext context) {
-    log.finest("Widget build started...");
+    _log.finest("Widget build started...");
     TextStyle textStyle = Theme.of(context).textTheme.title;
 
     return WillPopScope(
@@ -115,7 +116,7 @@ class NoteDetailState extends State<NoteDetail> {
                     controller: titleControler,
                     style: textStyle,
                     onFieldSubmitted: (value) {
-                      log.info("Something changed in Title Text Field");
+                      _log.info("Something changed in Title Text Field");
                       updateTitle();
                     },
                     validator: (value) {
@@ -142,7 +143,7 @@ class NoteDetailState extends State<NoteDetail> {
                     controller: descriptionControler,
                     style: textStyle,
                     onFieldSubmitted: (value) {
-                      log.info("Something changed in Description Text Field");
+                      _log.info("Something changed in Description Text Field");
                       updateDescription();
                     },
                     validator: (value) {
@@ -171,7 +172,7 @@ class NoteDetailState extends State<NoteDetail> {
                           child: Text('Save', textScaleFactor: 1.5),
                           onPressed: () {
                             setState(() {
-                              log.info("Saved button clicked");
+                              _log.info("Saved button clicked");
                               if (_formKey.currentState.validate()) _save();
                             });
                           },
@@ -186,7 +187,7 @@ class NoteDetailState extends State<NoteDetail> {
                           child: Text('Delete', textScaleFactor: 1.5),
                           onPressed: () {
                             setState(() {
-                              log.info("Delete button clicked");
+                              _log.info("Delete button clicked");
                               _delete();
                             });
                           },
@@ -245,7 +246,8 @@ class NoteDetailState extends State<NoteDetail> {
     if (result != 0) {
       Utils.showAlertDialog(context, 'Status', 'Note Deleted Successfully');
     } else {
-      Utils.showAlertDialog(context, 'Status', 'Error Occured while Deleting Note');
+      Utils.showAlertDialog(
+          context, 'Status', 'Error Occured while Deleting Note');
     }
   }
 }

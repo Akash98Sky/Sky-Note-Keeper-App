@@ -6,6 +6,7 @@ import 'package:note_keeper/screens/note_detail.dart';
 import 'package:note_keeper/screens/note_settings.dart';
 import 'package:note_keeper/screens/widgets/connectivity_widget.dart';
 import 'package:note_keeper/utils/database_helper.dart';
+import 'package:note_keeper/utils/packageinfo_helper.dart';
 import 'package:note_keeper/utils/utils.dart';
 
 class NoteList extends StatefulWidget {
@@ -18,15 +19,17 @@ class NoteList extends StatefulWidget {
 class NoteListState extends State<NoteList> {
   static const List<String> _popupOptions = ['Settings', 'About'];
 
-  static Logger log;
+  static Logger _log;
 
   DatabaseHelper databaseHelper = DatabaseHelper();
+  PackageInfoHelper packageInfo = PackageInfoHelper();
   List<Note> noteList;
   int _count = 0;
 
   NoteListState() {
-    log = Logger(this.toString(minLevel: DiagnosticLevel.hint));
-    log.fine("class is loaded...");
+    if (_log == null)
+      _log = Logger(this.toString(minLevel: DiagnosticLevel.hint).split("#")[0]);
+    _log.fine("class is loaded...");
   }
 
   @override
@@ -37,12 +40,12 @@ class NoteListState extends State<NoteList> {
       if (noteList == null) noteList = List<Note>();
     });
 
-    log.finer("init complete...");
+    _log.finer("init complete...");
   }
 
   @override
   Widget build(BuildContext context) {
-    log.finest("Widget build started...");
+    _log.finest("Widget build started...");
     IconData _syncIcon = Icons.sync;
 
     return WillPopScope(
@@ -60,31 +63,34 @@ class NoteListState extends State<NoteList> {
               Padding(
                   padding: EdgeInsets.only(right: 15),
                   child: ConnectivityWidget()),
-              GestureDetector(
-                child: Padding(
-                  padding: EdgeInsets.only(left: 5, right: 5),
-                  child: Icon(_syncIcon),
+              Tooltip(
+                child: GestureDetector(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 5, right: 5),
+                    child: Icon(_syncIcon),
+                  ),
+                  onTap: () async {
+                    if (ConnectivityIndicator.isOnline)
+                      setState(() {
+                        _syncIcon = Icons.sync;
+                      });
+                    else {
+                      setState(() {
+                        _syncIcon = Icons.sync_disabled;
+                      });
+                      return;
+                    }
+                    if (await databaseHelper.syncNotes()) {
+                      _log.info("Notes synced successfully...");
+                    } else {
+                      _log.warning("Failed to sync notes...");
+                      setState(() {
+                        _syncIcon = Icons.sync_problem;
+                      });
+                    }
+                  },
                 ),
-                onTap: () async {
-                  if (ConnectivityIndicator.isOnline)
-                    setState(() {
-                      _syncIcon = Icons.sync;
-                    });
-                  else {
-                    setState(() {
-                      _syncIcon = Icons.sync_disabled;
-                    });
-                    return;
-                  }
-                  if (await databaseHelper.syncNotes()) {
-                    log.info("Notes synced successfully...");
-                  } else {
-                    log.warning("Failed to sync notes...");
-                    setState(() {
-                      _syncIcon = Icons.sync_problem;
-                    });
-                  }
-                },
+                message: "Sync with Cloud",
               ),
               PopupMenuButton<String>(
                 onSelected: choiceAction,
@@ -102,7 +108,7 @@ class NoteListState extends State<NoteList> {
           body: getNodeListView(),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
-              log.info("FAB pressed");
+              _log.info("FAB pressed");
               navToDetail(Note('', '', 1), 'Add Note');
             },
             tooltip: 'Add Note',
@@ -186,16 +192,19 @@ class NoteListState extends State<NoteList> {
         this._count = noteList.length;
       });
 
-    log.finest("Updated List View");
+    _log.finest("Updated List View");
   }
 
   void choiceAction(String choice) {
     if (choice == _popupOptions[0])
       navToSettings();
     else if (choice == _popupOptions[1])
-      Utils.showAlertDialog(context, "Sky Note Keeper",
+      Utils.showAlertDialog(
+          context,
+          "${packageInfo.appName} v${packageInfo.appVersion}",
           "Developer & Designer =>\n Akash Mondal (Akash98Sky)",
-          titleCol: Colors.lightBlue, msgCol: Colors.orange);
+          titleCol: Colors.lightBlue,
+          msgCol: Colors.orange);
     else
       return null;
   }
@@ -262,7 +271,7 @@ class NoteListState extends State<NoteList> {
   void dispose() {
     databaseHelper.dispose();
     noteList.clear();
-    log.clearListeners();
+    _log.clearListeners();
     super.dispose();
   }
 }
