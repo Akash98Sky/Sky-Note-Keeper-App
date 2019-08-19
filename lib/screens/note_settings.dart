@@ -115,7 +115,7 @@ class NoteSettingsState extends State<NoteSettings> {
                         barrierDismissible: false,
                         context: context,
                         builder: (context) {
-                          return CheckUpdateAlert();
+                          return CheckUpdateWidget();
                         });
                   },
                 ),
